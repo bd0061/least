@@ -66,6 +66,15 @@ void handle_input(char ** buffer, WINDOW * w, int size, int exfile, FILE * f)
             case KEY_DOWN:
                 if(start < size - y + 1) start++;
                 break;
+            case 'i':
+            	start -= y - 1;
+            	if(start < 0) start = 0;
+            	
+            	break;
+            case 'k':
+            	start += y - 1;
+            	if(start > size - y + 1) start = size - y + 1;
+            	break;
             case KEY_LEFT:
                 if(shift > 0) shift--;
                 break;
