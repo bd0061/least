@@ -11,6 +11,7 @@
 
 void handle_input(char **, WINDOW *, int, int, FILE *);
 void free_lines(char **, int);
+void print_help(void);
 
 static int tabcount(char * s)
 {
@@ -50,6 +51,11 @@ int main(int argc, char **argv) {
     {
         
         char filepath[MAX_PATH_SIZE];
+        if(strcmp(argv[1],"-h") == 0 || strcmp(argv[1],"--help") == 0)
+        {
+            print_help();
+            exit(EXIT_SUCCESS);
+        }
         
         if (argv[1][0] == '/')
         {
