@@ -8,7 +8,11 @@
 #define MAX_PATH_SIZE 1024
 #define MAX_LINE 1024
 
-int tabcount(char * s)
+
+void handle_input(char **, WINDOW *, int, int, FILE *);
+void free_lines(char **, int);
+
+static int tabcount(char * s)
 {
     int t = 0;
     while(*s)
@@ -20,7 +24,7 @@ int tabcount(char * s)
     return t;
 }
 
-void init_curses()
+static void init_curses()
 {
    //mora se ovako inicijalizovati da bi radio pipe
     FILE *fs = fopen("/dev/tty", "r+");
@@ -30,17 +34,6 @@ void init_curses()
     keypad(stdscr, TRUE);
     raw();
     curs_set(0);
-}
-
-
-void free_lines(char **buffer, int size)
-{
-
-    for (int i = 0; i < size; i++) {
-        free(buffer[i]);
-    }
-
-    free(buffer);
 }
 
 
@@ -95,6 +88,7 @@ int main(int argc, char **argv) {
 
     if (buffer == NULL) 
     {
+        endwin();
         perror("Error allocating line buffer");
         exit(EXIT_FAILURE);
     }
@@ -109,8 +103,8 @@ int main(int argc, char **argv) {
 
         if (buffer[size] == NULL) 
         {
+            endwin();
             perror("Error allocating memory for another line");
-
             free_lines(buffer,size);
             
             if (exfile)
@@ -137,10 +131,7 @@ int main(int argc, char **argv) {
 
         if(z == MAX_LINE) z--;
         
-        buffer[size][z] = '\0';
-
-        //strcpy(buffer[size],line);
-        
+        buffer[size][z] = '\0';    
         size++;
 
         if (size >= capacity) 
@@ -149,10 +140,9 @@ int main(int argc, char **argv) {
             buffer = realloc(buffer, sizeof(char *) * capacity);
             if (buffer == NULL) 
             {
+                endwin();
                 perror("Error reallocating memory");
-                
                 free_lines(buffer,size);
-                
                 if (exfile)
                     fclose(f);
                 
@@ -161,84 +151,7 @@ int main(int argc, char **argv) {
         }
     }
     
-    int lineno;
-    int start = 0;
-    int shift = 0;
-    int max = 0;
-    int ch;
-    while(1)
-    {
-        
-        lineno = 0;
-
-        getmaxyx(stdscr,y,x);
-        clear();
-        
-        for (int i = start; i < y - 1 + start; i++) 
-        {
-            int len = strlen(buffer[i]);
-            if(len > max)
-                max = len;
-            if(shift <= len)
-                mvprintw(lineno,0,"%s",buffer[i] + shift);
-            lineno++;
-        }
-
-        attron(A_REVERSE);
-        
-        if(size - y + 1 - start != 0)
-            mvprintw(lineno,0,"Lines left: %d (shift: %d)",size - y + 1 - start,shift);
-        else 
-            mvprintw(lineno,0,"(END)");
-        
-        attroff(A_REVERSE);
-        
-        ch = getch();
-        
-        switch(ch)
-        {
-            case KEY_UP:
-                if(start > 0) start--;
-                break;
-            case KEY_DOWN:
-                if(start < size - y + 1) start++;
-                break;
-            case KEY_LEFT:
-                if(shift > 0) shift--;
-                break;
-            case KEY_RIGHT:
-                shift++;
-                break;
-            case 's':
-                start = size - y + 1;
-                break;
-            case 'w':
-                start = 0;
-                break;
-            case 'a':
-                shift = 0;
-                break;
-            case 'd':
-                if(max >= x) shift = x;
-                break;
-            case '\t':
-                shift +=4;
-                break;
-            case 'q':
-                goto out;
-
-
-        }
-
-    }
-
-    out:
-    free_lines(buffer,size);
-    endwin();
-
-    
-    if (exfile)
-        fclose(f);
+    handle_input(buffer,stdscr,size,exfile,f);
 
     return 0;
 }
